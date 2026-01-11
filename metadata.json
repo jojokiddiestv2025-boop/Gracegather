@@ -1,0 +1,8 @@
+{
+  "name": "GraceGather",
+  "description": "A Christian platform for daily spiritual growth, scripture challenges, and virtual fellowship meetings.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
