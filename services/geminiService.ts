@@ -30,10 +30,10 @@ export const generateDailyChallenge = async (): Promise<DailyChallenge> => {
   return JSON.parse(text) as DailyChallenge;
 };
 
-export const getBibleChapter = async (book: string, chapter: number): Promise<BibleChapter> => {
+export const getBibleChapter = async (book: string, chapter: number, translation: string = 'NIV'): Promise<BibleChapter> => {
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
-    contents: `Provide the full text and a summary for ${book} chapter ${chapter}. Use the NIV translation.`,
+    contents: `Provide the full text and a summary for ${book} chapter ${chapter}. Use the ${translation} translation. Ensure the text is accurate to the requested version.`,
     config: {
       responseMimeType: 'application/json',
       responseSchema: {

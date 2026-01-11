@@ -6,6 +6,7 @@ import LiveConference from './components/LiveConference';
 import BibleReader from './components/BibleReader';
 import PastorPortal from './components/PastorPortal';
 import PrayerWall from './components/PrayerWall';
+import BibleStudyList from './components/BibleStudyList';
 import Footer from './components/Footer';
 import { AppRoute } from './types';
 
@@ -15,10 +16,15 @@ const App: React.FC = () => {
   // Simple Hash Router Implementation
   useEffect(() => {
     const handleHashChange = () => {
-      const hash = window.location.hash.slice(1) || '/';
+      // Get the path without query params
+      const hash = window.location.hash.slice(1).split('?')[0] || '/';
+      
       // Normalize hash to match AppRoute enum
-      if (Object.values(AppRoute).includes(hash as AppRoute)) {
-        setCurrentRoute(hash as AppRoute);
+      // We check if the hash starts with any of the routes because some routes might accept params/IDs (though currently params are query based)
+      const matchedRoute = Object.values(AppRoute).find(route => route === hash);
+      
+      if (matchedRoute) {
+        setCurrentRoute(matchedRoute);
       } else {
         setCurrentRoute(AppRoute.HOME);
       }
@@ -49,6 +55,8 @@ const App: React.FC = () => {
         return <LiveConference />;
       case AppRoute.PASTOR_PORTAL:
         return <PastorPortal />;
+      case AppRoute.BIBLE_STUDY:
+        return <BibleStudyList />;
       default:
         return <Welcome onNavigate={navigate} />;
     }

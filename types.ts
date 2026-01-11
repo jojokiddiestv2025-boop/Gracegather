@@ -21,6 +21,7 @@ export enum AppRoute {
   PRAYER_WALL = '/prayer-wall',
   CONFERENCE = '/conference',
   PASTOR_PORTAL = '/pastor-portal',
+  BIBLE_STUDY = '/bible-study',
 }
 
 export interface PastorProfile {
@@ -66,12 +67,16 @@ export interface User {
 }
 
 // Schedule Types
+export type EventType = 'BROADCAST' | 'MEETING' | 'BIBLE_STUDY';
+
 export interface StreamEvent {
   id: string;
   title: string;
   dateTime: string; // ISO string for date and time
   description: string;
   isLive: boolean;
+  type?: EventType;
+  host?: string;
 }
 
 // Prayer Types

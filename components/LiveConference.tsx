@@ -4,7 +4,7 @@ import {
 } from 'lucide-react';
 import { ScheduleService } from '../services/scheduleService';
 import { AuthService } from '../services/authService';
-import { UserRole } from '../types';
+import { UserRole, StreamEvent } from '../types';
 
 const LiveConference: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -14,17 +14,65 @@ const LiveConference: React.FC = () => {
   const [viewerCount, setViewerCount] = useState(0);
   const [chatMessage, setChatMessage] = useState('');
   const [chatHistory, setChatHistory] = useState<Array<{user: string, message: string, color: string}>>([]);
+  
+  // Event Data
+  const [currentEvent, setCurrentEvent] = useState<StreamEvent | null>(null);
 
   useEffect(() => {
     const user = AuthService.getCurrentUser();
     setIsAdmin(user?.role === UserRole.ADMIN || user?.role === UserRole.PASTOR);
     
-    // Check if there is an active live event recorded in schedule
-    const activeEvent = ScheduleService.getLiveEvent();
-    if (activeEvent) {
-       setIsBroadcasting(true);
+    // Parse URL params
+    // Format: #/conference?id=123
+    const hash = window.location.hash;
+    const queryString = hash.split('?')[1];
+    const params = new URLSearchParams(queryString);
+    const eventId = params.get('id');
+
+    if (eventId) {
+       // Look up specific event
+       const event = ScheduleService.getEventById(eventId);
+       if (event) {
+          setCurrentEvent(event);
+          setIsBroadcasting(event.isLive);
+       }
+    } else {
+       // Default to global broadcast (legacy support or main stream)
+       setCurrentEvent({
+          id: 'main',
+          title: 'Main Sanctuary Stream',
+          dateTime: new Date().toISOString(),
+          description: 'Official Church Broadcast',
+          isLive: false,
+          type: 'BROADCAST',
+          host: 'Church'
+       });
+       
+       // Check if ANY live broadcast exists if we are in default mode
+       const activeEvent = ScheduleService.getLiveEvent();
+       if (activeEvent && activeEvent.type === 'BROADCAST') {
+          setIsBroadcasting(true);
+       }
     }
-  }, []);
+
+    // Polling for status updates if we are just a viewer
+    const interval = setInterval(() => {
+        if (eventId) {
+            const updated = ScheduleService.getEventById(eventId);
+            if (updated) setIsBroadcasting(updated.isLive);
+        } else {
+             const activeEvent = ScheduleService.getLiveEvent();
+             if (activeEvent && activeEvent.type === 'BROADCAST') {
+                 setIsBroadcasting(true);
+             } else {
+                 if (!stream) setIsBroadcasting(false); // Only set false if I am not the one streaming
+             }
+        }
+    }, 5000);
+
+    return () => clearInterval(interval);
+
+  }, [stream]); // Dependency on stream to avoid toggling off my own broadcast via polling
 
   useEffect(() => {
     if (videoRef.current && stream) {
@@ -35,7 +83,7 @@ const LiveConference: React.FC = () => {
   // Simulate viewer joining when broadcast starts
   useEffect(() => {
     if (isBroadcasting) {
-        setViewerCount(1);
+        setViewerCount(Math.floor(Math.random() * 5) + 1);
     } else {
         setViewerCount(0);
     }
@@ -47,14 +95,27 @@ const LiveConference: React.FC = () => {
       stream.getTracks().forEach(t => t.stop());
       setStream(null);
       setIsBroadcasting(false);
-      ScheduleService.setLiveStatus('manual-override', false);
+      
+      // Update persistent state
+      if (currentEvent && currentEvent.id !== 'main') {
+          ScheduleService.setLiveStatus(currentEvent.id, false);
+      } else {
+          ScheduleService.setLiveStatus('manual-override', false);
+      }
+
     } else {
       // Start Broadcasting
       try {
         const s = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         setStream(s);
         setIsBroadcasting(true);
-        ScheduleService.setLiveStatus('manual-override', true);
+        
+        // Update persistent state
+        if (currentEvent && currentEvent.id !== 'main') {
+            ScheduleService.setLiveStatus(currentEvent.id, true);
+        } else {
+            ScheduleService.setLiveStatus('manual-override', true);
+        }
       } catch (e) {
         alert("Camera access required for broadcast.");
       }
@@ -83,8 +144,10 @@ const LiveConference: React.FC = () => {
                 <Video className="w-5 h-5 text-white" />
              </div>
              <div>
-                <h1 className="font-bold text-lg">GraceGather Live</h1>
-                <p className="text-xs text-slate-400">Main Sanctuary Stream</p>
+                <h1 className="font-bold text-lg">{currentEvent?.title}</h1>
+                <p className="text-xs text-slate-400">
+                    {currentEvent?.type === 'BIBLE_STUDY' ? 'Interactive Group Session' : 'Live Broadcast'}
+                </p>
              </div>
           </div>
           <div className="flex items-center gap-4">
@@ -125,7 +188,7 @@ const LiveConference: React.FC = () => {
                                 </div>
                                 <h3 className="text-xl font-bold text-white mb-2">Live Stream Active</h3>
                                 <p className="text-slate-500 max-w-md px-4">
-                                   The broadcast has started. In a full production environment, the video player would load the stream URL here.
+                                   The host is live. In a full production environment, the video player would load the stream URL here.
                                 </p>
                              </div>
                           ) : (
@@ -135,7 +198,7 @@ const LiveConference: React.FC = () => {
                                    <VideoOff className="w-8 h-8 text-slate-600" />
                                 </div>
                                 <h3 className="text-xl font-bold text-slate-400">Stream Offline</h3>
-                                <p className="text-slate-600 mt-2">Waiting for the broadcast to begin...</p>
+                                <p className="text-slate-600 mt-2">Waiting for the host to begin...</p>
                              </div>
                           )}
                        </div>
@@ -145,8 +208,8 @@ const LiveConference: React.FC = () => {
                 {/* Stream Actions */}
                 <div className="mt-4 bg-slate-800 p-4 rounded-xl flex flex-wrap justify-between items-center gap-4">
                     <div>
-                       <h2 className="text-xl font-bold text-white">Sunday Service</h2>
-                       <p className="text-slate-400 text-sm">Join us for worship and a message.</p>
+                       <h2 className="text-xl font-bold text-white">{currentEvent?.title}</h2>
+                       <p className="text-slate-400 text-sm">Host: {currentEvent?.host || 'Church Team'}</p>
                     </div>
 
                     <div className="flex gap-3">
@@ -165,7 +228,7 @@ const LiveConference: React.FC = () => {
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="font-bold text-white flex items-center">
                                 <Info className="w-4 h-4 mr-2 text-gold-400" /> 
-                                Broadcaster Controls
+                                Host Controls
                             </h3>
                             <span className="text-xs bg-gold-500/20 text-gold-400 px-2 py-1 rounded border border-gold-500/30">ADMIN ACCESS</span>
                         </div>

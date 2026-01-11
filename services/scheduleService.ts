@@ -1,4 +1,4 @@
-import { StreamEvent } from '../types';
+import { StreamEvent, EventType } from '../types';
 
 const STORAGE_KEY = 'gracegather_schedule';
 
@@ -12,14 +12,20 @@ export const ScheduleService = {
     );
   },
 
-  addEvent: (title: string, dateTime: string, description: string): StreamEvent => {
+  getEventById: (id: string): StreamEvent | undefined => {
+    return ScheduleService.getEvents().find(e => e.id === id);
+  },
+
+  addEvent: (title: string, dateTime: string, description: string, type: EventType = 'BROADCAST', host: string = 'Sanctuary'): StreamEvent => {
     const events = ScheduleService.getEvents();
     const newEvent: StreamEvent = {
       id: Date.now().toString(),
       title,
       dateTime,
       description,
-      isLive: false
+      isLive: false,
+      type,
+      host
     };
     events.push(newEvent);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
@@ -35,9 +41,13 @@ export const ScheduleService = {
     let events = ScheduleService.getEvents();
     events = events.map(e => ({
       ...e,
-      isLive: e.id === id ? isLive : false // Ensure only one is live at a time
+      isLive: e.id === id ? isLive : e.isLive // Allow multiple simultaneous streams if different IDs
     }));
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+    // If the ID is 'manual-override', we don't update storage, this is just for the local component state usually, 
+    // but here we want to persist the live status of specific events.
+    if (id !== 'manual-override') {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+    }
   },
 
   getLiveEvent: (): StreamEvent | undefined => {

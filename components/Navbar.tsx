@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Home, BookOpen, Video, Menu, X, Book, MessageCircleHeart, Heart, Radio } from 'lucide-react';
+import { Home, BookOpen, Video, Menu, X, Book, MessageCircleHeart, Heart, Radio, Users } from 'lucide-react';
 import { AppRoute } from '../types';
 import { ScheduleService } from '../services/scheduleService';
 
@@ -27,9 +27,10 @@ const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate }) => {
   const navItems = [
     { label: 'Home', path: AppRoute.HOME, icon: <Home className="w-4 h-4 mr-2" /> },
     { label: 'Bible', path: AppRoute.BIBLE, icon: <Book className="w-4 h-4 mr-2" /> },
+    { label: 'Bible Study', path: AppRoute.BIBLE_STUDY, icon: <Users className="w-4 h-4 mr-2" /> },
     { label: 'Daily Manna', path: AppRoute.CHALLENGE, icon: <BookOpen className="w-4 h-4 mr-2" /> },
     { label: 'Prayer Wall', path: AppRoute.PRAYER_WALL, icon: <Heart className="w-4 h-4 mr-2" /> },
-    { label: 'Fellowship', path: AppRoute.CONFERENCE, icon: <Video className="w-4 h-4 mr-2" /> },
+    { label: 'Live Stream', path: AppRoute.CONFERENCE, icon: <Video className="w-4 h-4 mr-2" /> },
     { label: 'Pastoral Care', path: AppRoute.PASTOR_PORTAL, icon: <MessageCircleHeart className="w-4 h-4 mr-2" /> },
   ];
 
@@ -54,7 +55,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate }) => {
             </div>
 
             {/* Desktop Menu */}
-            <div className="hidden lg:flex items-center space-x-4">
+            <div className="hidden lg:flex items-center space-x-1">
               {navItems.map((item) => (
                 <button
                   key={item.path}

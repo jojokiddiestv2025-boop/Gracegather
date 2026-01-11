@@ -5,7 +5,7 @@ import { ScheduleService } from '../services/scheduleService';
 import { PrayerService } from '../services/prayerService';
 import { User, UserRole, StreamEvent, PrayerRequest } from '../types';
 
-type PortalView = 'landing' | 'login' | 'application' | 'dashboard' | 'applications-list' | 'prayer-list' | 'schedule-manager' | 'test';
+type PortalView = 'landing' | 'login' | 'dashboard' | 'applications-list' | 'prayer-list' | 'schedule-manager' | 'test';
 
 const PastorPortal: React.FC = () => {
   const [view, setView] = useState<PortalView>('landing');
@@ -38,10 +38,6 @@ const PastorPortal: React.FC = () => {
   const [authError, setAuthError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Application Form State (For external users applying to become pastors)
-  const [applicationForm, setApplicationForm] = useState({ name: '', motivation: '' });
-  const [appSubmitted, setAppSubmitted] = useState(false);
-
   // Dashboard State
   const [generatedMeetingId, setGeneratedMeetingId] = useState('');
   const [pendingUsers, setPendingUsers] = useState<User[]>([]);
@@ -51,11 +47,6 @@ const PastorPortal: React.FC = () => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [showQuizResult, setShowQuizResult] = useState(false);
   const [testPassed, setTestPassed] = useState(false);
-
-  // --- Mock Data ---
-  const [externalApplications, setExternalApplications] = useState([
-    { id: 1, name: "New Applicant Example", motivation: "I feel called.", status: "Pending" }
-  ]);
 
   const PASTOR_TEST_QUESTIONS = [
     {
@@ -173,17 +164,6 @@ const PastorPortal: React.FC = () => {
     setLoading(false);
   };
 
-  const handleApplicationSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setAppSubmitted(true);
-    setTimeout(() => {
-        setView('landing');
-        setAppSubmitted(false);
-        setApplicationForm({ name: '', motivation: '' });
-        alert("Application submitted! We will contact you soon.");
-    }, 2000);
-  };
-
   const createMeeting = () => {
     const id = "FELLOWSHIP-" + Math.floor(Math.random() * 10000);
     setGeneratedMeetingId(id);
@@ -202,7 +182,8 @@ const PastorPortal: React.FC = () => {
   const handleAddSchedule = (e: React.FormEvent) => {
     e.preventDefault();
     const dateTime = `${streamDate}T${streamTime}`;
-    ScheduleService.addEvent(streamTitle, dateTime, streamDesc);
+    // Default to BROADCAST for Pastor Portal scheduler
+    ScheduleService.addEvent(streamTitle, dateTime, streamDesc, 'BROADCAST', user?.name || 'Sanctuary');
     loadSchedule();
     setStreamTitle(''); setStreamDate(''); setStreamTime(''); setStreamDesc('');
   };
@@ -224,12 +205,9 @@ const PastorPortal: React.FC = () => {
   const handleGoLive = (id: string) => {
     ScheduleService.setLiveStatus(id, true);
     // Redirect to conference room with ID
-    // We'll use the ID as the room code
     const event = scheduledEvents.find(e => e.id === id);
     if (event) {
-        // In a real app we'd pass this via context or route params
-        // For hash router simple implementation:
-        window.location.hash = `/conference?code=${event.id}&topic=${encodeURIComponent(event.title)}&role=host`;
+        window.location.hash = `/conference?id=${event.id}`;
     }
   };
 
@@ -305,21 +283,13 @@ const PastorPortal: React.FC = () => {
               Secure area for pastors and admins to manage ministry, meetings, and applications.
             </p>
             <div className="flex flex-col gap-3">
-              <div className="flex gap-3">
-                <button 
-                  onClick={() => setView('login')}
-                  className="flex-1 py-4 bg-church-600 hover:bg-church-700 text-white font-bold rounded-xl shadow-md transition-colors flex items-center justify-center"
-                >
-                  <Lock className="w-4 h-4 mr-2" />
-                  Secure Login
-                </button>
-                <button 
-                  onClick={() => setView('application')}
-                  className="flex-1 py-4 bg-white border-2 border-church-600 text-church-600 hover:bg-church-50 font-bold rounded-xl transition-colors"
-                >
-                  Apply
-                </button>
-              </div>
+              <button 
+                onClick={() => setView('login')}
+                className="w-full py-4 bg-church-600 hover:bg-church-700 text-white font-bold rounded-xl shadow-md transition-colors flex items-center justify-center"
+              >
+                <Lock className="w-4 h-4 mr-2" />
+                Secure Login
+              </button>
               <button 
                 onClick={handleStartTest}
                 className="w-full py-3 bg-church-50 text-church-700 border border-church-200 font-bold rounded-xl hover:bg-church-100 transition-colors flex items-center justify-center text-sm"
@@ -578,54 +548,6 @@ const PastorPortal: React.FC = () => {
     </div>
   );
 
-  const renderApplication = () => (
-    <div className="max-w-2xl mx-auto pt-10 px-4 pb-20">
-      <button onClick={() => setView('landing')} className="flex items-center text-gray-500 hover:text-church-600 mb-6">
-        <ChevronLeft className="w-4 h-4 mr-1" /> Back
-      </button>
-      <div className="bg-white p-8 rounded-2xl shadow-xl border-t-4 border-gold-500">
-        <h2 className="text-3xl font-bold text-church-900 mb-2">Pastoral Application</h2>
-        <p className="text-gray-600 mb-8">
-            "Here I am, send me." (Isaiah 6:8)
-        </p>
-
-        {appSubmitted ? (
-            <div className="flex flex-col items-center py-10 animate-fade-in">
-                <CheckCircle className="w-16 h-16 text-green-500 mb-4" />
-                <h3 className="text-2xl font-bold text-church-900">Application Received</h3>
-                <p className="text-gray-600 mt-2">Thank you for offering your heart to serve.</p>
-                <button onClick={() => setView('landing')} className="mt-8 text-church-600 underline">Return Home</button>
-            </div>
-        ) : (
-            <form onSubmit={handleApplicationSubmit} className="space-y-6">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                    <input required className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold-500 outline-none" 
-                        value={applicationForm.name} onChange={e => setApplicationForm({...applicationForm, name: e.target.value})}
-                    />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Why do you want to serve?</label>
-                    <textarea required rows={4} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gold-500 outline-none" 
-                         value={applicationForm.motivation} onChange={e => setApplicationForm({...applicationForm, motivation: e.target.value})}
-                         placeholder="Share your testimony and reason for ministry..."
-                    />
-                </div>
-                <div>
-                    <label className="flex items-center">
-                        <input type="checkbox" required className="mr-2" />
-                        <span className="text-sm text-gray-600">I agree to the Statement of Faith and Code of Conduct.</span>
-                    </label>
-                </div>
-                <button type="submit" className="w-full py-4 bg-gold-500 hover:bg-gold-600 text-white font-bold rounded-lg shadow-md transition-colors">
-                    Submit Application
-                </button>
-            </form>
-        )}
-      </div>
-    </div>
-  );
-
   const renderDashboard = () => (
     <div className="max-w-6xl mx-auto pt-8 px-4">
       {/* Header */}
@@ -672,20 +594,18 @@ const PastorPortal: React.FC = () => {
             </div>
          )}
 
-         <div onClick={() => setView('applications-list')} className="bg-white p-6 rounded-xl shadow-md border-l-4 border-gold-500 cursor-pointer hover:bg-yellow-50 transition-colors group">
-            <Users className="w-8 h-8 text-gold-500 mb-2 group-hover:scale-110 transition-transform" />
-            <h3 className="text-gray-800 text-lg font-bold">
-               {user?.role === UserRole.ADMIN ? 'Pending Approvals' : 'View Applications'}
-            </h3>
-            <p className="text-sm text-gray-500">
-               {user?.role === UserRole.ADMIN ? 'Approve new pastor accounts.' : 'See who has applied to serve.'}
-            </p>
-            {user?.role === UserRole.ADMIN && pendingUsers.length > 0 && (
-                <div className="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center animate-pulse">
-                    {pendingUsers.length}
-                </div>
-            )}
-         </div>
+         {user?.role === UserRole.ADMIN && (
+             <div onClick={() => setView('applications-list')} className="bg-white p-6 rounded-xl shadow-md border-l-4 border-gold-500 cursor-pointer hover:bg-yellow-50 transition-colors group">
+                <Users className="w-8 h-8 text-gold-500 mb-2 group-hover:scale-110 transition-transform" />
+                <h3 className="text-gray-800 text-lg font-bold">Pending Approvals</h3>
+                <p className="text-sm text-gray-500">Approve new pastor accounts.</p>
+                {pendingUsers.length > 0 && (
+                    <div className="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center animate-pulse">
+                        {pendingUsers.length}
+                    </div>
+                )}
+             </div>
+         )}
 
          <div onClick={() => setView('prayer-list')} className="bg-white p-6 rounded-xl shadow-md border-l-4 border-purple-500 cursor-pointer hover:bg-purple-50 transition-colors group">
             <FileText className="w-8 h-8 text-purple-500 mb-2 group-hover:scale-110 transition-transform" />
@@ -833,67 +753,43 @@ const PastorPortal: React.FC = () => {
         </div>
       )}
 
-      {view === 'applications-list' && (
+      {view === 'applications-list' && user?.role === UserRole.ADMIN && (
         <div className="bg-white rounded-xl shadow-md overflow-hidden animate-fade-in border border-gray-100">
            <div className="bg-church-50 px-6 py-4 border-b border-church-100 flex justify-between items-center">
-              <h3 className="font-bold text-church-800">
-                  {user?.role === UserRole.ADMIN ? 'Pending Pastor Approvals' : 'Pastor Applications'}
-              </h3>
+              <h3 className="font-bold text-church-800">Pending Pastor Approvals</h3>
               <button onClick={() => setView('dashboard')} className="text-sm text-church-600 hover:underline">Close</button>
            </div>
            
-           {user?.role === UserRole.ADMIN ? (
-             // ADMIN VIEW: Real pending users
-             pendingUsers.length === 0 ? (
-                <div className="p-8 text-center text-gray-500">No pending account approvals.</div>
-             ) : (
-                <ul className="divide-y divide-gray-100">
-                    {pendingUsers.map(pUser => (
-                        <li key={pUser.username} className="p-6 hover:bg-gray-50 transition-colors">
-                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
-                                <div>
-                                    <div className="font-bold text-lg text-gray-800">{pUser.name}</div>
-                                    <div className="text-sm text-gray-500">Username: {pUser.username}</div>
-                                    <div className="text-xs text-orange-500 bg-orange-100 inline-block px-2 py-1 rounded mt-2">Awaiting Approval</div>
-                                </div>
-                                <div className="flex space-x-2 mt-4 md:mt-0">
-                                    <button 
-                                        onClick={() => handleApproveUser(pUser.username)}
-                                        className="px-4 py-2 bg-green-600 text-white font-bold rounded hover:bg-green-700"
-                                    >
-                                        Approve Access
-                                    </button>
-                                    <button 
-                                        onClick={() => handleRejectUser(pUser.username)}
-                                        className="px-4 py-2 bg-red-100 text-red-600 font-bold rounded hover:bg-red-200"
-                                    >
-                                        Reject
-                                    </button>
-                                </div>
-                            </div>
-                        </li>
-                    ))}
-                </ul>
-             )
+           {pendingUsers.length === 0 ? (
+              <div className="p-8 text-center text-gray-500">No pending account approvals.</div>
            ) : (
-             // PASTOR VIEW: Mock external applications
-             <ul className="divide-y divide-gray-100">
-               {externalApplications.map(app => (
-                 <li key={app.id} className="p-6 hover:bg-gray-50 transition-colors">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
-                      <div className="mb-4 md:mb-0">
-                        <div className="flex items-center">
-                          <span className="font-bold text-lg text-gray-800">{app.name}</span>
-                          <span className="ml-3 px-2 py-1 text-xs font-bold rounded uppercase tracking-wider bg-yellow-100 text-yellow-800">
-                            {app.status}
-                          </span>
-                        </div>
-                        <div className="text-sm text-gray-600 italic mt-1 border-l-2 border-gray-300 pl-3">"{app.motivation}"</div>
-                      </div>
-                    </div>
-                 </li>
-               ))}
-             </ul>
+              <ul className="divide-y divide-gray-100">
+                  {pendingUsers.map(pUser => (
+                      <li key={pUser.username} className="p-6 hover:bg-gray-50 transition-colors">
+                          <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+                              <div>
+                                  <div className="font-bold text-lg text-gray-800">{pUser.name}</div>
+                                  <div className="text-sm text-gray-500">Username: {pUser.username}</div>
+                                  <div className="text-xs text-orange-500 bg-orange-100 inline-block px-2 py-1 rounded mt-2">Awaiting Approval</div>
+                              </div>
+                              <div className="flex space-x-2 mt-4 md:mt-0">
+                                  <button 
+                                      onClick={() => handleApproveUser(pUser.username)}
+                                      className="px-4 py-2 bg-green-600 text-white font-bold rounded hover:bg-green-700"
+                                  >
+                                      Approve Access
+                                  </button>
+                                  <button 
+                                      onClick={() => handleRejectUser(pUser.username)}
+                                      className="px-4 py-2 bg-red-100 text-red-600 font-bold rounded hover:bg-red-200"
+                                  >
+                                      Reject
+                                  </button>
+                              </div>
+                          </div>
+                      </li>
+                  ))}
+              </ul>
            )}
         </div>
       )}
@@ -948,7 +844,6 @@ const PastorPortal: React.FC = () => {
     <div className="min-h-screen bg-slate-50 pb-20">
       {view === 'landing' && renderLanding()}
       {view === 'login' && renderLogin()}
-      {view === 'application' && renderApplication()}
       {view === 'test' && renderTest()}
       {['dashboard', 'applications-list', 'prayer-list', 'schedule-manager'].includes(view) && renderDashboard()}
     </div>
