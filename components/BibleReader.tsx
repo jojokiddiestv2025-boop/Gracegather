@@ -1,244 +1,381 @@
 import React, { useState, useEffect } from 'react';
-import { getBibleChapter } from '../services/geminiService';
 import { BibleChapter } from '../types';
-import { ChevronLeft, ChevronRight, Book, Loader2, Search, Settings, Share2, Type } from 'lucide-react';
+import { BibleService } from '../services/bibleService';
+import { ChevronLeft, ChevronRight, Book, Search, Type, Info, Menu, X, WifiOff, Globe } from 'lucide-react';
 
-const BIBLE_BOOKS = [
+// --- Data Structures ---
+
+type BookData = {
+  name: string;
+  chapters: number;
+  testament: 'Old' | 'New';
+};
+
+const BIBLE_STRUCTURE: BookData[] = [
   // Old Testament
-  "Genesis", "Exodus", "Leviticus", "Numbers", "Deuteronomy",
-  "Joshua", "Judges", "Ruth", "1 Samuel", "2 Samuel",
-  "1 Kings", "2 Kings", "1 Chronicles", "2 Chronicles", "Ezra",
-  "Nehemiah", "Esther", "Job", "Psalms", "Proverbs",
-  "Ecclesiastes", "Song of Solomon", "Isaiah", "Jeremiah", "Lamentations",
-  "Ezekiel", "Daniel", "Hosea", "Joel", "Amos",
-  "Obadiah", "Jonah", "Micah", "Nahum", "Habakkuk",
-  "Zephaniah", "Haggai", "Zechariah", "Malachi",
+  { name: "Genesis", chapters: 50, testament: 'Old' },
+  { name: "Exodus", chapters: 40, testament: 'Old' },
+  { name: "Leviticus", chapters: 27, testament: 'Old' },
+  { name: "Numbers", chapters: 36, testament: 'Old' },
+  { name: "Deuteronomy", chapters: 34, testament: 'Old' },
+  { name: "Joshua", chapters: 24, testament: 'Old' },
+  { name: "Judges", chapters: 21, testament: 'Old' },
+  { name: "Ruth", chapters: 4, testament: 'Old' },
+  { name: "1 Samuel", chapters: 31, testament: 'Old' },
+  { name: "2 Samuel", chapters: 24, testament: 'Old' },
+  { name: "1 Kings", chapters: 22, testament: 'Old' },
+  { name: "2 Kings", chapters: 25, testament: 'Old' },
+  { name: "1 Chronicles", chapters: 29, testament: 'Old' },
+  { name: "2 Chronicles", chapters: 36, testament: 'Old' },
+  { name: "Ezra", chapters: 10, testament: 'Old' },
+  { name: "Nehemiah", chapters: 13, testament: 'Old' },
+  { name: "Esther", chapters: 10, testament: 'Old' },
+  { name: "Job", chapters: 42, testament: 'Old' },
+  { name: "Psalms", chapters: 150, testament: 'Old' },
+  { name: "Proverbs", chapters: 31, testament: 'Old' },
+  { name: "Ecclesiastes", chapters: 12, testament: 'Old' },
+  { name: "Song of Solomon", chapters: 8, testament: 'Old' },
+  { name: "Isaiah", chapters: 66, testament: 'Old' },
+  { name: "Jeremiah", chapters: 52, testament: 'Old' },
+  { name: "Lamentations", chapters: 5, testament: 'Old' },
+  { name: "Ezekiel", chapters: 48, testament: 'Old' },
+  { name: "Daniel", chapters: 12, testament: 'Old' },
+  { name: "Hosea", chapters: 14, testament: 'Old' },
+  { name: "Joel", chapters: 3, testament: 'Old' },
+  { name: "Amos", chapters: 9, testament: 'Old' },
+  { name: "Obadiah", chapters: 1, testament: 'Old' },
+  { name: "Jonah", chapters: 4, testament: 'Old' },
+  { name: "Micah", chapters: 7, testament: 'Old' },
+  { name: "Nahum", chapters: 3, testament: 'Old' },
+  { name: "Habakkuk", chapters: 3, testament: 'Old' },
+  { name: "Zephaniah", chapters: 3, testament: 'Old' },
+  { name: "Haggai", chapters: 2, testament: 'Old' },
+  { name: "Zechariah", chapters: 14, testament: 'Old' },
+  { name: "Malachi", chapters: 4, testament: 'Old' },
   // New Testament
-  "Matthew", "Mark", "Luke", "John", "Acts",
-  "Romans", "1 Corinthians", "2 Corinthians", "Galatians", "Ephesians",
-  "Philippians", "Colossians", "1 Thessalonians", "2 Thessalonians", "1 Timothy",
-  "2 Timothy", "Titus", "Philemon", "Hebrews", "James",
-  "1 Peter", "2 Peter", "1 John", "2 John", "3 John",
-  "Jude", "Revelation"
+  { name: "Matthew", chapters: 28, testament: 'New' },
+  { name: "Mark", chapters: 16, testament: 'New' },
+  { name: "Luke", chapters: 24, testament: 'New' },
+  { name: "John", chapters: 21, testament: 'New' },
+  { name: "Acts", chapters: 28, testament: 'New' },
+  { name: "Romans", chapters: 16, testament: 'New' },
+  { name: "1 Corinthians", chapters: 16, testament: 'New' },
+  { name: "2 Corinthians", chapters: 13, testament: 'New' },
+  { name: "Galatians", chapters: 6, testament: 'New' },
+  { name: "Ephesians", chapters: 6, testament: 'New' },
+  { name: "Philippians", chapters: 4, testament: 'New' },
+  { name: "Colossians", chapters: 4, testament: 'New' },
+  { name: "1 Thessalonians", chapters: 5, testament: 'New' },
+  { name: "2 Thessalonians", chapters: 3, testament: 'New' },
+  { name: "1 Timothy", chapters: 6, testament: 'New' },
+  { name: "2 Timothy", chapters: 4, testament: 'New' },
+  { name: "Titus", chapters: 3, testament: 'New' },
+  { name: "Philemon", chapters: 1, testament: 'New' },
+  { name: "Hebrews", chapters: 13, testament: 'New' },
+  { name: "James", chapters: 5, testament: 'New' },
+  { name: "1 Peter", chapters: 5, testament: 'New' },
+  { name: "2 Peter", chapters: 3, testament: 'New' },
+  { name: "1 John", chapters: 5, testament: 'New' },
+  { name: "2 John", chapters: 1, testament: 'New' },
+  { name: "3 John", chapters: 1, testament: 'New' },
+  { name: "Jude", chapters: 1, testament: 'New' },
+  { name: "Revelation", chapters: 22, testament: 'New' }
 ];
 
 const TRANSLATIONS = [
-  { code: "NIV", name: "New International Version" },
-  { code: "KJV", name: "King James Version" },
-  { code: "ESV", name: "English Standard Version" },
-  { code: "NKJV", name: "New King James Version" },
-  { code: "NLT", name: "New Living Translation" },
-  { code: "NASB", name: "New American Standard Bible" }
+  { code: 'kjv', name: 'King James Version' },
+  { code: 'web', name: 'World English Bible' },
+  { code: 'bbe', name: 'Bible in Basic English' },
+  { code: 'asv', name: 'American Standard Version' }
 ];
 
 const BibleReader: React.FC = () => {
-  const [selectedBook, setSelectedBook] = useState("Genesis");
+  // State
+  const [selectedBookIndex, setSelectedBookIndex] = useState(0); // Index in BIBLE_STRUCTURE
   const [selectedChapter, setSelectedChapter] = useState(1);
-  const [selectedTranslation, setSelectedTranslation] = useState("NIV");
+  const [selectedTranslation, setSelectedTranslation] = useState('kjv');
+  const [fontSize, setFontSize] = useState(18);
+  const [showBookMenu, setShowBookMenu] = useState(false);
   
+  // Data State
   const [chapterData, setChapterData] = useState<BibleChapter | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState('');
+
+  // Derived
+  const currentBook = BIBLE_STRUCTURE[selectedBookIndex];
   
-  // UI State
-  const [fontSize, setFontSize] = useState(18); // px
-
+  // Fetch Data
   useEffect(() => {
-    fetchChapter(selectedBook, selectedChapter, selectedTranslation);
-  }, [selectedBook, selectedChapter, selectedTranslation]);
+    const loadChapter = async () => {
+        setLoading(true);
+        setError('');
+        
+        try {
+            const data = await BibleService.getChapter(currentBook.name, selectedChapter, selectedTranslation);
+            if (data) {
+                setChapterData(data);
+            } else {
+                setError('Could not load chapter. Please check your connection.');
+            }
+        } catch (e) {
+            setError('An unexpected error occurred.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-  const fetchChapter = async (book: string, chapter: number, translation: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await getBibleChapter(book, chapter, translation);
-      setChapterData(data);
-    } catch (err) {
-      setError("Unable to retrieve scripture. Please check your connection.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    loadChapter();
+  }, [selectedBookIndex, selectedChapter, selectedTranslation]);
 
+  // Handlers
   const handleNext = () => {
-    // Simple logic: just increment chapter. 
-    // In a real app, check max chapters per book and handle book rollover.
-    setSelectedChapter(prev => prev + 1);
+    if (selectedChapter < currentBook.chapters) {
+      setSelectedChapter(prev => prev + 1);
+    } else if (selectedBookIndex < BIBLE_STRUCTURE.length - 1) {
+      // Go to next book
+      setSelectedBookIndex(prev => prev + 1);
+      setSelectedChapter(1);
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handlePrev = () => {
     if (selectedChapter > 1) {
       setSelectedChapter(prev => prev - 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (selectedBookIndex > 0) {
+      // Go to prev book
+      setSelectedBookIndex(prev => prev - 1);
+      // Go to last chapter of prev book
+      setSelectedChapter(BIBLE_STRUCTURE[selectedBookIndex - 1].chapters);
     }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const selectBook = (index: number) => {
+    setSelectedBookIndex(index);
+    setSelectedChapter(1);
+    setShowBookMenu(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
-    <div className="min-h-screen bg-stone-50 text-gray-800 font-sans">
+    <div className="min-h-screen bg-stone-100 font-serif text-gray-900">
       
-      {/* Sticky Header Controls */}
-      <div className="sticky top-0 z-30 bg-white border-b border-stone-200 shadow-sm transition-all duration-300">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="h-16 flex items-center justify-between gap-4">
+      {/* Top Navigation Bar */}
+      <div className="bg-white border-b border-stone-200 sticky top-0 z-30 shadow-sm">
+         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
             
-            {/* Book & Chapter Selection */}
-            <div className="flex items-center flex-1 gap-2 min-w-0">
-               <div className="relative group flex-shrink-1 min-w-[120px]">
-                 <select 
-                    value={selectedBook}
-                    onChange={(e) => {
-                        setSelectedBook(e.target.value);
-                        setSelectedChapter(1); // Reset to ch 1 on book change
-                    }}
-                    className="w-full appearance-none bg-stone-100 hover:bg-stone-200 border-none text-church-900 font-bold py-2 pl-3 pr-8 rounded-lg cursor-pointer focus:ring-2 focus:ring-gold-500 transition-colors text-sm sm:text-base"
-                 >
-                    {BIBLE_BOOKS.map(book => (
-                        <option key={book} value={book}>{book}</option>
-                    ))}
-                 </select>
-                 <Book className="absolute right-2 top-2.5 w-4 h-4 text-stone-500 pointer-events-none" />
+            {/* Book Selector Trigger */}
+            <button 
+              onClick={() => setShowBookMenu(true)}
+              className="flex items-center gap-2 px-3 py-2 hover:bg-stone-50 rounded-lg transition-colors group"
+            >
+               <Book className="w-5 h-5 text-stone-500 group-hover:text-church-600" />
+               <div className="flex flex-col items-start">
+                   <span className="font-display font-bold text-base sm:text-lg text-church-900 group-hover:text-church-700 leading-tight">
+                     {currentBook.name}
+                   </span>
+                   <span className="text-[10px] text-stone-500 uppercase tracking-wider">
+                     {currentBook.testament}
+                   </span>
                </div>
+            </button>
 
-               <div className="flex items-center bg-stone-100 hover:bg-stone-200 rounded-lg px-2 py-1">
-                   <span className="text-stone-500 text-xs font-bold mr-2 uppercase tracking-wider hidden sm:inline">Chap</span>
-                   <input 
-                      type="number" 
-                      min="1" 
-                      value={selectedChapter}
-                      onChange={(e) => setSelectedChapter(Math.max(1, parseInt(e.target.value) || 1))}
-                      className="w-12 bg-transparent text-church-900 font-bold text-center focus:outline-none"
-                   />
-               </div>
-            </div>
-
-            {/* Translation & Settings */}
+            {/* Middle Controls (Translation & Chapter) */}
             <div className="flex items-center gap-2 sm:gap-4">
-                <div className="relative hidden sm:block">
-                    <select 
-                        value={selectedTranslation}
-                        onChange={(e) => setSelectedTranslation(e.target.value)}
-                        className="appearance-none bg-transparent text-church-600 font-semibold py-1 pr-6 cursor-pointer focus:outline-none text-sm"
-                    >
-                        {TRANSLATIONS.map(t => (
-                            <option key={t.code} value={t.code}>{t.code}</option>
-                        ))}
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-church-600">
-                        <span className="text-[10px]">▼</span>
-                    </div>
-                </div>
-
-                {/* Mobile Translation View (Icon) */}
-                <div className="sm:hidden relative">
+                 {/* Translation Selector (Desktop) */}
+                 <div className="hidden md:flex items-center bg-stone-50 rounded-lg px-2 py-1 border border-stone-100">
+                     <Globe className="w-4 h-4 text-stone-400 mr-2" />
                      <select 
                         value={selectedTranslation}
                         onChange={(e) => setSelectedTranslation(e.target.value)}
-                        className="absolute inset-0 opacity-0 w-full h-full"
-                    >
-                         {TRANSLATIONS.map(t => (
-                            <option key={t.code} value={t.code}>{t.code}</option>
+                        className="bg-transparent text-sm font-bold text-stone-600 focus:outline-none cursor-pointer"
+                     >
+                        {TRANSLATIONS.map(t => (
+                            <option key={t.code} value={t.code}>{t.code.toUpperCase()}</option>
                         ))}
-                    </select>
-                    <button className="p-2 text-church-600 bg-stone-100 rounded-md font-bold text-xs">{selectedTranslation}</button>
-                </div>
+                     </select>
+                 </div>
 
-                <div className="h-6 w-px bg-stone-300 hidden sm:block"></div>
-
-                <button 
-                  onClick={() => setFontSize(prev => Math.min(prev + 2, 28))} 
-                  className="p-2 text-stone-500 hover:text-church-600 hover:bg-stone-100 rounded-full transition-colors hidden sm:block"
-                  title="Increase Font Size"
-                >
-                    <Type className="w-5 h-5" />
-                </button>
+                 {/* Chapter Navigator */}
+                 <div className="flex items-center bg-stone-100 rounded-lg p-1">
+                    <button 
+                        onClick={handlePrev}
+                        disabled={selectedBookIndex === 0 && selectedChapter === 1}
+                        className="p-1 hover:bg-white rounded-md disabled:opacity-30 transition-all"
+                    >
+                        <ChevronLeft className="w-5 h-5 text-stone-600" />
+                    </button>
+                    <div className="px-3 font-bold font-sans text-church-800 min-w-[2.5rem] text-center">
+                        {selectedChapter}
+                    </div>
+                    <button 
+                        onClick={handleNext}
+                        disabled={selectedBookIndex === BIBLE_STRUCTURE.length - 1 && selectedChapter === currentBook.chapters}
+                        className="p-1 hover:bg-white rounded-md disabled:opacity-30 transition-all"
+                    >
+                        <ChevronRight className="w-5 h-5 text-stone-600" />
+                    </button>
+                 </div>
             </div>
-          </div>
-        </div>
+
+            {/* Settings */}
+            <div className="hidden sm:flex items-center border-l border-stone-200 pl-4 ml-4">
+               <button 
+                 onClick={() => setFontSize(s => Math.min(s + 2, 28))}
+                 className="p-2 hover:bg-stone-50 rounded-full"
+                 title="Increase Size"
+               >
+                 <Type className="w-5 h-5 text-stone-500" />
+               </button>
+            </div>
+         </div>
       </div>
 
-      {/* Main Content Area */}
-      <main className="max-w-4xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-         <div className="bg-white rounded-xl shadow-lg min-h-[60vh] relative overflow-hidden">
-            {/* Texture overlay for paper feel */}
-            <div className="absolute inset-0 opacity-20 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/cream-paper.png')]"></div>
-
-            {loading ? (
-                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm">
-                    <Loader2 className="w-12 h-12 text-gold-500 animate-spin mb-4" />
-                    <p className="text-church-800 font-display text-lg animate-pulse">Seeking Scripture...</p>
-                </div>
-            ) : error ? (
-                <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
-                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-6">
-                        <Search className="w-8 h-8 text-red-500" />
+      {/* Book Selection Menu Overlay */}
+      {showBookMenu && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex justify-end">
+           <div className="w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-slide-in-right">
+              <div className="p-4 border-b flex justify-between items-center bg-stone-50">
+                 <h3 className="font-bold text-lg font-display text-church-900">Select Book</h3>
+                 <button onClick={() => setShowBookMenu(false)} className="p-2 hover:bg-stone-200 rounded-full">
+                    <X className="w-6 h-6 text-stone-500" />
+                 </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                 {/* Mobile Translation Selector */}
+                 <div className="md:hidden mb-4 p-4 bg-stone-50 rounded-xl">
+                    <label className="block text-xs font-bold text-stone-500 uppercase mb-2">Translation</label>
+                    <div className="flex flex-wrap gap-2">
+                        {TRANSLATIONS.map(t => (
+                            <button
+                                key={t.code}
+                                onClick={() => setSelectedTranslation(t.code)}
+                                className={`px-3 py-1 rounded-full text-xs font-bold ${selectedTranslation === t.code ? 'bg-church-600 text-white' : 'bg-white border border-stone-200 text-stone-600'}`}
+                            >
+                                {t.name}
+                            </button>
+                        ))}
                     </div>
-                    <h3 className="text-xl font-bold text-gray-800 mb-2">Could Not Load Chapter</h3>
-                    <p className="text-gray-600 max-w-md mb-6">{error}</p>
-                    <button 
-                        onClick={() => fetchChapter(selectedBook, selectedChapter, selectedTranslation)}
-                        className="px-6 py-2 bg-church-600 text-white font-bold rounded-lg hover:bg-church-700 transition-colors"
-                    >
-                        Try Again
-                    </button>
-                </div>
-            ) : chapterData ? (
-                <div className="relative z-0 p-8 md:p-12 lg:p-16">
-                    <div className="text-center mb-10 border-b border-stone-200 pb-8">
-                        <span className="text-xs font-bold tracking-[0.2em] text-gold-600 uppercase mb-2 block">
-                            {TRANSLATIONS.find(t => t.code === selectedTranslation)?.name}
+                 </div>
+
+                 <div>
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-stone-400 mb-3">Old Testament</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                       {BIBLE_STRUCTURE.filter(b => b.testament === 'Old').map((b, i) => (
+                          <button 
+                            key={b.name}
+                            onClick={() => selectBook(i)}
+                            className={`text-left px-3 py-2 rounded-lg text-sm font-bold transition-colors ${currentBook.name === b.name ? 'bg-church-600 text-white' : 'hover:bg-stone-100 text-stone-700'}`}
+                          >
+                             {b.name}
+                          </button>
+                       ))}
+                    </div>
+                 </div>
+                 <div>
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-stone-400 mb-3">New Testament</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                       {BIBLE_STRUCTURE.map((b, i) => ({...b, originalIndex: i})).filter(b => b.testament === 'New').map((b) => (
+                          <button 
+                            key={b.name}
+                            onClick={() => selectBook(b.originalIndex)}
+                            className={`text-left px-3 py-2 rounded-lg text-sm font-bold transition-colors ${currentBook.name === b.name ? 'bg-church-600 text-white' : 'hover:bg-stone-100 text-stone-700'}`}
+                          >
+                             {b.name}
+                          </button>
+                       ))}
+                    </div>
+                 </div>
+              </div>
+           </div>
+        </div>
+      )}
+
+      {/* Reader Content */}
+      <main className="max-w-3xl mx-auto px-4 py-8 sm:px-6">
+         <div className="bg-white shadow-xl rounded-xl overflow-hidden min-h-[80vh] relative border border-stone-200">
+             {/* Paper Texture */}
+             <div className="absolute inset-0 bg-[#fdfbf7] opacity-100"></div>
+             
+             <div className="relative z-10 p-8 md:p-12">
+                <div className="text-center mb-10 pb-8 border-b border-stone-200">
+                   <h1 className="text-4xl md:text-5xl font-display font-bold text-church-900 mb-2">
+                      {currentBook.name} <span className="text-gold-600">{selectedChapter}</span>
+                   </h1>
+                   <div className="flex justify-center items-center gap-2 mt-2">
+                        <span className="px-2 py-0.5 bg-stone-100 text-stone-500 text-xs font-bold rounded uppercase tracking-wider">
+                            {selectedTranslation.toUpperCase()}
                         </span>
-                        <h1 className="text-4xl md:text-5xl font-display font-bold text-church-900 mb-6">
-                            {chapterData.book} <span className="text-gold-500">{chapterData.chapter}</span>
-                        </h1>
-                        <p className="text-stone-500 italic font-serif max-w-2xl mx-auto leading-relaxed">
-                            "{chapterData.summary}"
-                        </p>
-                    </div>
+                        {error ? (
+                             <span className="text-red-500 text-xs font-bold flex items-center">
+                                 <WifiOff className="w-3 h-3 mr-1" /> Offline / Error
+                             </span>
+                        ) : (
+                             <span className="text-green-600 text-xs font-bold flex items-center">
+                                 Read Mode
+                             </span>
+                        )}
+                   </div>
+                </div>
 
+                {loading ? (
+                    <div className="flex flex-col items-center justify-center py-20 animate-pulse">
+                        <div className="w-2 h-2 bg-church-400 rounded-full mb-2"></div>
+                        <div className="w-2 h-2 bg-church-400 rounded-full mb-2"></div>
+                        <div className="w-2 h-2 bg-church-400 rounded-full"></div>
+                    </div>
+                ) : chapterData ? (
                     <div 
-                        className="font-serif text-gray-800 leading-[1.8] md:leading-[2]"
+                        className="prose prose-lg max-w-none text-gray-800 leading-relaxed"
                         style={{ fontSize: `${fontSize}px` }}
                     >
                         {chapterData.verses.map((verse) => (
-                            <span key={verse.number} className="group relative inline hover:bg-yellow-50/50 transition-colors rounded decoration-clone py-1">
-                                <sup className="text-[0.6em] text-gold-600 font-bold mr-1 select-none opacity-60 group-hover:opacity-100 align-super">
-                                    {verse.number}
-                                </sup>
-                                <span className="mr-1">{verse.text}</span>
+                            <span key={verse.number} className="mr-1 inline">
+                                <sup className="text-[0.6em] font-bold text-gold-600 mr-1 select-none">{verse.number}</sup>
+                                <span className="hover:bg-yellow-100/50 transition-colors rounded px-0.5 decoration-clone">{verse.text}</span>
                             </span>
                         ))}
                     </div>
-
-                    {/* Footer Navigation within the card */}
-                    <div className="mt-16 pt-8 border-t border-stone-100 flex justify-between items-center text-sm font-bold text-church-600">
+                ) : (
+                    <div className="text-center py-20 px-6">
+                        <div className="inline-block p-4 bg-red-50 rounded-full mb-4">
+                            <WifiOff className="w-8 h-8 text-red-400" />
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-800 mb-2">Scripture Unavailable</h3>
+                        <p className="text-gray-500 max-w-md mx-auto mb-6">
+                            We couldn't fetch this chapter. If you are offline, this chapter has not been cached yet.
+                        </p>
                         <button 
-                            onClick={handlePrev}
-                            disabled={selectedChapter <= 1}
-                            className="flex items-center hover:text-gold-600 disabled:opacity-30 disabled:hover:text-church-600 transition-colors"
+                            onClick={() => window.location.reload()}
+                            className="px-6 py-2 bg-church-600 text-white font-bold rounded-lg hover:bg-church-700"
                         >
-                            <ChevronLeft className="w-4 h-4 mr-1" /> Previous Chapter
-                        </button>
-                        <button 
-                            onClick={handleNext}
-                            className="flex items-center hover:text-gold-600 transition-colors"
-                        >
-                            Next Chapter <ChevronRight className="w-4 h-4 ml-1" />
+                            Retry Connection
                         </button>
                     </div>
+                )}
+
+                {/* Footer Controls */}
+                <div className="mt-16 pt-8 border-t border-stone-100 flex justify-between items-center">
+                   <button 
+                     onClick={handlePrev}
+                     disabled={selectedBookIndex === 0 && selectedChapter === 1}
+                     className="flex items-center text-stone-500 hover:text-church-600 disabled:opacity-30 transition-colors font-bold text-sm"
+                   >
+                     <ChevronLeft className="w-4 h-4 mr-1" /> Previous
+                   </button>
+                   <button 
+                     onClick={handleNext}
+                     disabled={selectedBookIndex === BIBLE_STRUCTURE.length - 1 && selectedChapter === currentBook.chapters}
+                     className="flex items-center text-stone-500 hover:text-church-600 disabled:opacity-30 transition-colors font-bold text-sm"
+                   >
+                     Next <ChevronRight className="w-4 h-4 ml-1" />
+                   </button>
                 </div>
-            ) : null}
+             </div>
          </div>
       </main>
-
-      {/* Floating Action Button for Quick Share (Demo) */}
-      <button 
-        className="fixed bottom-8 right-8 bg-gold-500 hover:bg-gold-600 text-white p-4 rounded-full shadow-xl hover:shadow-2xl hover:scale-105 transition-all z-40 hidden md:flex items-center justify-center"
-        onClick={() => alert(`Reading ${selectedBook} ${selectedChapter} (${selectedTranslation})`)}
-        title="Share Current Reading"
-      >
-          <Share2 className="w-6 h-6" />
-      </button>
 
     </div>
   );

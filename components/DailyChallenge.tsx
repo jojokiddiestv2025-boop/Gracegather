@@ -1,19 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { DailyChallenge as IDailyChallenge } from '../types';
-import { generateDailyChallenge } from '../services/geminiService';
 import { Loader2, Book, PenTool, Hand, Heart } from 'lucide-react';
+
+const STATIC_CHALLENGE: IDailyChallenge = {
+  verse: "For I know the plans I have for you,” declares the Lord, “plans to prosper you and not to harm you, plans to give you hope and a future.",
+  reference: "Jeremiah 29:11",
+  reflectionQuestion: "How does knowing God has a specific plan for your future change how you view your current struggles?",
+  actionItem: "Write down three areas of your life where you need to trust God's plan more deeply today.",
+  prayerFocus: "Pray for trust and patience to wait on God's timing."
+};
 
 const DailyChallenge: React.FC = () => {
   const [challenge, setChallenge] = useState<IDailyChallenge | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate checking if today's challenge is already local, else fetch
+    // Simulate loading data
     const loadChallenge = async () => {
       setLoading(true);
       try {
-        const data = await generateDailyChallenge();
-        setChallenge(data);
+        await new Promise(resolve => setTimeout(resolve, 800)); // Mock delay
+        setChallenge(STATIC_CHALLENGE);
       } catch (e) {
         console.error(e);
       } finally {
