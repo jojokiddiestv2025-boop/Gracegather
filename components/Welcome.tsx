@@ -1,24 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { AppRoute, StreamEvent } from '../types';
-import { ArrowRight, Heart, Users, Sun, Code, Sparkles, Calendar, Radio } from 'lucide-react';
-import { ScheduleService } from '../services/scheduleService';
+import React from 'react';
+import { AppRoute } from '../types';
+import { ArrowRight, Heart, Users, Sun, Code, Sparkles } from 'lucide-react';
 
 interface WelcomeProps {
   onNavigate: (route: AppRoute) => void;
 }
 
 const Welcome: React.FC<WelcomeProps> = ({ onNavigate }) => {
-  const [upcomingEvents, setUpcomingEvents] = useState<StreamEvent[]>([]);
-
-  useEffect(() => {
-    // Load schedule
-    const events = ScheduleService.getEvents();
-    // Filter for future events or live events
-    const now = new Date();
-    const future = events.filter(e => new Date(e.dateTime) > now || e.isLive);
-    setUpcomingEvents(future.slice(0, 3)); // Show next 3
-  }, []);
-
   return (
     <div className="flex flex-col min-h-screen relative">
       
@@ -50,57 +38,15 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigate }) => {
                 Start Daily Challenge <ArrowRight className="ml-2 w-5 h-5" />
               </button>
               <button
-                onClick={() => onNavigate(AppRoute.CONFERENCE)}
+                onClick={() => onNavigate(AppRoute.PRAYER_WALL)}
                 className="px-8 py-3 bg-transparent border-2 border-white text-white font-bold rounded-full hover:bg-white/10 transition-colors flex items-center"
               >
-                Join Prayer Room
+                Go to Prayer Wall
               </button>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Schedule / Live Section */}
-      {upcomingEvents.length > 0 && (
-        <div className="bg-slate-50 border-b border-gray-200">
-             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div className="flex items-center mb-6">
-                    <div className="p-2 bg-red-100 rounded-full mr-3">
-                        <Radio className="w-5 h-5 text-red-600" />
-                    </div>
-                    <h2 className="text-xl font-bold text-gray-800">Upcoming Live Broadcasts</h2>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {upcomingEvents.map(event => (
-                        <div key={event.id} className={`p-6 rounded-xl border ${event.isLive ? 'bg-red-600 text-white border-red-700 shadow-lg transform scale-105' : 'bg-white text-gray-800 border-gray-200 shadow-sm'}`}>
-                            <div className="flex justify-between items-start mb-2">
-                                <span className={`text-xs font-bold uppercase tracking-wider px-2 py-1 rounded ${event.isLive ? 'bg-white/20' : 'bg-gray-100 text-gray-500'}`}>
-                                    {event.isLive ? 'LIVE NOW' : 'Scheduled'}
-                                </span>
-                                {event.isLive && <span className="w-3 h-3 bg-white rounded-full animate-ping"></span>}
-                            </div>
-                            <h3 className="text-lg font-bold mb-1">{event.title}</h3>
-                            <div className={`text-sm mb-3 flex items-center ${event.isLive ? 'text-white/80' : 'text-gray-500'}`}>
-                                <Calendar className="w-4 h-4 mr-2" />
-                                {new Date(event.dateTime).toLocaleDateString()} at {new Date(event.dateTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
-                            </div>
-                            <p className={`text-sm mb-4 ${event.isLive ? 'text-white/90' : 'text-gray-600'}`}>{event.description}</p>
-                            {event.isLive ? (
-                                <button 
-                                    onClick={() => onNavigate(AppRoute.CONFERENCE)}
-                                    className="w-full py-2 bg-white text-red-600 font-bold rounded-lg hover:bg-gray-100 transition-colors shadow-md"
-                                >
-                                    Join Stream
-                                </button>
-                            ) : (
-                                <div className="text-xs italic opacity-70">Mark your calendar</div>
-                            )}
-                        </div>
-                    ))}
-                </div>
-             </div>
-        </div>
-      )}
 
       {/* Features Section */}
       <div className="py-24 bg-white">
@@ -129,7 +75,7 @@ const Welcome: React.FC<WelcomeProps> = ({ onNavigate }) => {
               </div>
               <h3 className="text-xl font-bold text-church-900 mb-2">Community Fellowship</h3>
               <p className="text-gray-600">
-                Gather virtually for Bible study, prayer meetings, and encouraging discussions.
+                Connect with others by sharing prayer requests and encouraging one another on the Prayer Wall.
               </p>
             </div>
 

@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Welcome from './components/Welcome';
 import DailyChallenge from './components/DailyChallenge';
-import LiveConference from './components/LiveConference';
 import BibleReader from './components/BibleReader';
 import PastorPortal from './components/PastorPortal';
 import PrayerWall from './components/PrayerWall';
-import BibleStudyList from './components/BibleStudyList';
+import VideoGallery from './components/VideoGallery';
+import Branding from './components/Branding';
 import Footer from './components/Footer';
 import { AppRoute } from './types';
 
@@ -51,12 +51,12 @@ const App: React.FC = () => {
         return <DailyChallenge />;
       case AppRoute.PRAYER_WALL:
         return <PrayerWall />;
-      case AppRoute.CONFERENCE:
-        return <LiveConference />;
       case AppRoute.PASTOR_PORTAL:
         return <PastorPortal />;
-      case AppRoute.BIBLE_STUDY:
-        return <BibleStudyList />;
+      case AppRoute.VIDEOS:
+        return <VideoGallery />;
+      case AppRoute.BRANDING:
+        return <Branding />;
       default:
         return <Welcome onNavigate={navigate} />;
     }
@@ -68,7 +68,7 @@ const App: React.FC = () => {
       <main className="flex-grow">
         {renderContent()}
       </main>
-      {currentRoute !== AppRoute.CONFERENCE && <Footer />}
+      <Footer />
     </div>
   );
 };

@@ -19,9 +19,9 @@ export enum AppRoute {
   BIBLE = '/bible',
   CHALLENGE = '/daily-challenge',
   PRAYER_WALL = '/prayer-wall',
-  CONFERENCE = '/conference',
   PASTOR_PORTAL = '/pastor-portal',
-  BIBLE_STUDY = '/bible-study',
+  BRANDING = '/branding',
+  VIDEOS = '/videos',
 }
 
 export interface PastorProfile {
@@ -66,19 +66,6 @@ export interface User {
   joinedAt?: string;
 }
 
-// Schedule Types
-export type EventType = 'BROADCAST' | 'MEETING' | 'BIBLE_STUDY';
-
-export interface StreamEvent {
-  id: string;
-  title: string;
-  dateTime: string; // ISO string for date and time
-  description: string;
-  isLive: boolean;
-  type?: EventType;
-  host?: string;
-}
-
 // Prayer Types
 export interface PrayerRequest {
   id: string;
@@ -87,4 +74,35 @@ export interface PrayerRequest {
   timestamp: string;
   prayerCount: number;
   isAnonymous: boolean;
+}
+
+// Schedule & Streaming Types
+export type EventType = 'BROADCAST' | 'BIBLE_STUDY';
+
+export interface StreamEvent {
+  id: string;
+  title: string;
+  dateTime: string;
+  description: string;
+  isLive: boolean;
+  type: EventType;
+  host: string;
+}
+
+// Video Gallery Types
+export interface VideoItem {
+  id: string;
+  title: string;
+  description: string;
+  url: string; // Embed URL
+  postedBy: string;
+  date: string;
+}
+
+// System Settings
+export interface CloudSettings {
+  enabled: boolean;
+  provider: 'JSONBIN';
+  apiKey: string;
+  binId: string;
 }

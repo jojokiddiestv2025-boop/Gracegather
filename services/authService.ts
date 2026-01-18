@@ -1,4 +1,5 @@
 import { User, UserRole, UserStatus } from "../types";
+import { StorageService } from './storageService';
 
 const SESSION_KEY = 'gracegather_auth_session';
 const DB_KEY = 'gracegather_users_db';
@@ -29,19 +30,13 @@ const SEED_USERS: Record<string, StoredUser> = {
   }
 };
 
-// Helper to get users from storage or seed them
-const getUsers = (): Record<string, StoredUser> => {
-  const stored = localStorage.getItem(DB_KEY);
-  if (stored) {
-    return JSON.parse(stored);
-  }
-  // Initialize storage with seed data
-  localStorage.setItem(DB_KEY, JSON.stringify(SEED_USERS));
-  return SEED_USERS;
+// Async helper to get users from storage (Local or Cloud)
+const getUsers = async (): Promise<Record<string, StoredUser>> => {
+  return StorageService.load(DB_KEY, SEED_USERS);
 };
 
-const saveUsers = (users: Record<string, StoredUser>) => {
-  localStorage.setItem(DB_KEY, JSON.stringify(users));
+const saveUsers = async (users: Record<string, StoredUser>) => {
+  await StorageService.save(DB_KEY, users);
 };
 
 export const AuthService = {
@@ -49,7 +44,7 @@ export const AuthService = {
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 800));
 
-    const users = getUsers();
+    const users = await getUsers();
     const user = users[username.toLowerCase()];
     
     if (user && user.password === password) {
@@ -68,7 +63,7 @@ export const AuthService = {
         token: `mock-jwt-${Date.now()}-${Math.random().toString(36).substr(2)}`
       };
       
-      // Persist session
+      // Persist session (Local only for session)
       localStorage.setItem(SESSION_KEY, JSON.stringify(sessionUser));
       return sessionUser;
     }
@@ -84,7 +79,7 @@ export const AuthService = {
       throw new Error('Invalid Ministry Code.');
     }
 
-    const users = getUsers();
+    const users = await getUsers();
     const normalizedUsername = username.toLowerCase();
 
     if (users[normalizedUsername]) {
@@ -103,7 +98,7 @@ export const AuthService = {
 
     // Save to "Database"
     users[normalizedUsername] = newUser;
-    saveUsers(users);
+    await saveUsers(users);
 
     // DO NOT Auto-login
     return; 
@@ -131,25 +126,25 @@ export const AuthService = {
   // Admin Methods
   getPendingUsers: async (): Promise<StoredUser[]> => {
     await new Promise(resolve => setTimeout(resolve, 500));
-    const users = getUsers();
+    const users = await getUsers();
     return Object.values(users).filter(u => u.status === UserStatus.PENDING);
   },
 
   approveUser: async (username: string): Promise<void> => {
     await new Promise(resolve => setTimeout(resolve, 500));
-    const users = getUsers();
+    const users = await getUsers();
     if (users[username.toLowerCase()]) {
         users[username.toLowerCase()].status = UserStatus.APPROVED;
-        saveUsers(users);
+        await saveUsers(users);
     }
   },
 
   rejectUser: async (username: string): Promise<void> => {
     await new Promise(resolve => setTimeout(resolve, 500));
-    const users = getUsers();
+    const users = await getUsers();
     if (users[username.toLowerCase()]) {
         users[username.toLowerCase()].status = UserStatus.REJECTED;
-        saveUsers(users);
+        await saveUsers(users);
     }
   }
 };

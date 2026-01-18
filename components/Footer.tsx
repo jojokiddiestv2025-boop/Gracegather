@@ -12,6 +12,7 @@ const Footer: React.FC = () => {
           <a href="#" className="hover:text-white transition-colors">Privacy</a>
           <a href="#" className="hover:text-white transition-colors">Terms</a>
           <a href="#" className="hover:text-white transition-colors">Statement of Faith</a>
+          <a href="#/branding" className="hover:text-gold-400 transition-colors font-bold">Logo & Brand Kit</a>
         </div>
         <div className="mt-4 md:mt-0 text-xs text-church-500">
           &copy; {new Date().getFullYear()} GraceGather. All rights reserved.

@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { Home, BookOpen, Video, Menu, X, Book, MessageCircleHeart, Heart, Radio, Users } from 'lucide-react';
+import React, { useState } from 'react';
+import { Home, BookOpen, Menu, X, Book, MessageCircleHeart, Heart, Video } from 'lucide-react';
 import { AppRoute } from '../types';
-import { ScheduleService } from '../services/scheduleService';
 
 interface NavbarProps {
   currentRoute: AppRoute;
@@ -10,43 +9,18 @@ interface NavbarProps {
 
 const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isLive, setIsLive] = useState(false);
-
-  // Poll for live status to show global indicator
-  useEffect(() => {
-    const checkLiveStatus = () => {
-        const liveEvent = ScheduleService.getLiveEvent();
-        setIsLive(!!liveEvent);
-    };
-    
-    checkLiveStatus();
-    const interval = setInterval(checkLiveStatus, 5000); // Check every 5 seconds
-    return () => clearInterval(interval);
-  }, []);
 
   const navItems = [
     { label: 'Home', path: AppRoute.HOME, icon: <Home className="w-4 h-4 mr-2" /> },
     { label: 'Bible', path: AppRoute.BIBLE, icon: <Book className="w-4 h-4 mr-2" /> },
-    { label: 'Bible Study', path: AppRoute.BIBLE_STUDY, icon: <Users className="w-4 h-4 mr-2" /> },
     { label: 'Daily Manna', path: AppRoute.CHALLENGE, icon: <BookOpen className="w-4 h-4 mr-2" /> },
     { label: 'Prayer Wall', path: AppRoute.PRAYER_WALL, icon: <Heart className="w-4 h-4 mr-2" /> },
-    { label: 'Live Stream', path: AppRoute.CONFERENCE, icon: <Video className="w-4 h-4 mr-2" /> },
+    { label: 'Gallery', path: AppRoute.VIDEOS, icon: <Video className="w-4 h-4 mr-2" /> },
     { label: 'Pastoral Care', path: AppRoute.PASTOR_PORTAL, icon: <MessageCircleHeart className="w-4 h-4 mr-2" /> },
   ];
 
   return (
     <>
-      {/* Global Live Banner */}
-      {isLive && (
-        <div 
-          onClick={() => onNavigate(AppRoute.CONFERENCE)}
-          className="bg-red-600 text-white px-4 py-2 text-center text-sm font-bold cursor-pointer hover:bg-red-700 transition-colors flex justify-center items-center animate-pulse"
-        >
-            <Radio className="w-4 h-4 mr-2" />
-            LIVE BROADCAST IN PROGRESS — JOIN NOW
-        </div>
-      )}
-
       <nav className="bg-white shadow-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
